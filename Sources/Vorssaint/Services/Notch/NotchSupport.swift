@@ -2766,6 +2766,19 @@ struct NotchGeometry: Equatable {
         return CGRect(origin: .zero, size: size).contains(
             CGPoint(x: point.x - frame.minX, y: frame.maxY - point.y))
     }
+
+    /// How far into the screen its top edge reaches, for a pointer pushed
+    /// against it to bring out an island waiting there.
+    static let edgeRevealDepth: CGFloat = 2
+
+    /// The top edge of the screen above the closed island. Once the pointer
+    /// is there, `holding` reaches down to the closed island's bottom, a
+    /// floating capsule's gap included, as `contains` does for its size.
+    func edgeRevealContains(_ point: CGPoint, holding: Bool) -> Bool {
+        let frame = self.frame(for: collapsed)
+        let bottom = holding ? frame.minY : screen.maxY - Self.edgeRevealDepth
+        return point.x >= frame.minX && point.x < frame.maxX && point.y > bottom && point.y <= screen.maxY
+    }
 }
 
 struct NotchSessionState {

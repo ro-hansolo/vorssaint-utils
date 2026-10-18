@@ -1072,6 +1072,33 @@ enum NotchTests {
         }
     }
 
+    /// In full screen the closed island's place is the app's toolbar: only the
+    /// top edge above it reaches a hidden island there, then its whole place.
+    private static func fullscreenEdgeRevealContracts(_ suite: TestSuite) {
+        let screen = CGRect(x: -1920, y: 900, width: 1920, height: 1080)
+        for silhouette in [NotchSilhouette.notch, .capsule] {
+            let geometry = NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, compactSideRoom: 64,
+                                         silhouette: silhouette)
+            let closed = geometry.frame(for: geometry.collapsed)
+            let edge = CGPoint(x: closed.midX, y: screen.maxY)
+            let toolbar = CGPoint(x: closed.midX, y: screen.maxY - NotchGeometry.edgeRevealDepth - 1)
+            suite.expect(geometry.edgeRevealContains(edge, holding: false)
+                         && geometry.edgeRevealContains(CGPoint(x: closed.minX, y: screen.maxY - 1), holding: false)
+                         && geometry.contains(toolbar, in: geometry.collapsed)
+                         && !geometry.edgeRevealContains(toolbar, holding: false),
+                         "a pointer pushed against the top edge reaches the hidden island, never one over the toolbar below")
+            suite.expect(!geometry.edgeRevealContains(CGPoint(x: closed.minX - 1, y: screen.maxY), holding: false)
+                         && !geometry.edgeRevealContains(CGPoint(x: closed.maxX, y: screen.maxY), holding: false)
+                         && !geometry.edgeRevealContains(CGPoint(x: closed.midX, y: screen.maxY + 1), holding: false),
+                         "the top edge beside the island, or past the display, leaves it hidden")
+            suite.expect(geometry.edgeRevealContains(toolbar, holding: true)
+                         && geometry.edgeRevealContains(CGPoint(x: closed.midX, y: closed.minY + 1), holding: true)
+                         && !geometry.edgeRevealContains(CGPoint(x: closed.midX, y: closed.minY), holding: true)
+                         && !geometry.edgeRevealContains(CGPoint(x: closed.maxX, y: closed.midY), holding: true),
+                         "once at the edge, the pointer keeps the opening over the closed island's place and no further")
+        }
+    }
+
     private static func menuSpaceReuseContracts(_ suite: TestSuite) {
         let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
         let previous = NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, menuBarHeight: 24, compactSideRoom: 0)
@@ -1598,6 +1625,7 @@ enum NotchTests {
         noticeLayoutContracts(suite)
         simulatedMenuBoundsContracts(suite)
         simulatedDisplayContracts(suite)
+        fullscreenEdgeRevealContracts(suite)
         menuSpaceReuseContracts(suite)
         menuBarHeightContracts(suite)
         physicalStripContracts(suite)
@@ -1884,6 +1912,7 @@ enum NotchTests {
                && !defaults.bool(forKey: DefaultsKey.notchOpenOnHover),
                "a new island starts spacious and opens by click")
         suite.expect(!defaults.bool(forKey: DefaultsKey.notchHideUntilHover), "hidden hover is opt-in")
+        suite.expect(!defaults.bool(forKey: DefaultsKey.notchFullscreenEdgeReveal), "waiting at the top edge in full screen is opt-in")
         suite.expect(!defaults.bool(forKey: DefaultsKey.notchOutlineEnabled), "the island outline is opt-in")
         suite.expect(!defaults.bool(forKey: DefaultsKey.notchHideMenuBarGap),
                      "the island matches the physical notch's height unless covering the gap below it is chosen")
@@ -2359,7 +2388,7 @@ enum NotchTests {
                                 DefaultsKey.notchCaptureControls, DefaultsKey.notchQuickPanel, DefaultsKey.notchAppPanel,
                                 DefaultsKey.notchHidesMenuBarIcon, DefaultsKey.notchScratchpad,
                                 DefaultsKey.notchHoverExpands, DefaultsKey.notchEnabled, DefaultsKey.notchDisplay,
-                                DefaultsKey.notchOpenOnHover, DefaultsKey.notchHoverDelay, DefaultsKey.notchCloseDelay, DefaultsKey.notchHideUntilHover, DefaultsKey.notchHiddenModules,
+                                DefaultsKey.notchOpenOnHover, DefaultsKey.notchHoverDelay, DefaultsKey.notchCloseDelay, DefaultsKey.notchHideUntilHover, DefaultsKey.notchFullscreenEdgeReveal, DefaultsKey.notchHiddenModules,
                                 DefaultsKey.notchModuleOrder, DefaultsKey.notchQuickAccessLayout, DefaultsKey.notchQuickAccessSide, DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird, DefaultsKey.notchVolume,
                                 DefaultsKey.notchMicrophone, DefaultsKey.notchBrightness, DefaultsKey.notchBattery,
                                 DefaultsKey.notchClipboard, DefaultsKey.notchClipboardWindow, DefaultsKey.notchCapture,

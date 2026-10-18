@@ -408,9 +408,23 @@ final class NotchService: ObservableObject {
     }
 
     private var hiddenUntilHover: Bool {
-        !hiddenInFullscreen && UserDefaults.standard.bool(forKey: DefaultsKey.notchHideUntilHover)
+        waitsForHover && !expanded && !peeking && !dragPlaceholder && captureControls == nil
+    }
+
+    /// Whether the closed island waits out of sight for the pointer, open or
+    /// not: everywhere when hidden until hover, and in full screen only at
+    /// the screen's top edge.
+    private var waitsForHover: Bool {
+        (hiddenInFullscreen ? waitsAtFullscreenEdge : UserDefaults.standard.bool(forKey: DefaultsKey.notchHideUntilHover))
             && UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
-            && !expanded && !peeking && !dragPlaceholder && captureControls == nil
+    }
+
+    /// In full screen a simulated cutout can wait at the screen's top edge,
+    /// as the menu bar does. The app's own toolbar sits right below, so the
+    /// pointer passing over it never brings the island out.
+    private var waitsAtFullscreenEdge: Bool {
+        hiddenInFullscreen && !geometry.isNotched
+            && UserDefaults.standard.bool(forKey: DefaultsKey.notchFullscreenEdgeReveal)
     }
 
     /// Full screen keeps a clickable black cutout until the user opens it.
@@ -419,7 +433,8 @@ final class NotchService: ObservableObject {
     }
 
     /// A simulated cutout covers no camera, so in full screen it stays out
-    /// of the picture until a shortcut opens it.
+    /// of the picture until a shortcut opens it, or the pointer reaches the
+    /// top edge when it waits there.
     private var hiddenAtRestInFullscreen: Bool {
         fullscreenCompact && !geometry.isNotched
     }
@@ -1483,11 +1498,11 @@ final class NotchService: ObservableObject {
     }
 
     func hover(_ entered: Bool) {
-        guard running, !suspended, !hiddenAtRestInFullscreen else { removeHoverExitMonitors(); return }
+        guard running, !suspended, !hiddenAtRestInFullscreen || hiddenUntilHover else { removeHoverExitMonitors(); return }
         let point = NSEvent.mouseLocation
         let wasInside = inside
         let showedPicker = showsCompactActivityPicker
-        inside = hiddenUntilHover ? geometry.contains(point, in: geometry.collapsed)
+        inside = hiddenUntilHover ? reachesHiddenIsland(point, holding: wasInside)
             && windowHost?.isConcealedForMissionControl == false
             : windowHost?.containsHover(point) == true || pointerOverChildWindow(point)
         hoverState.update(pointerInside: inside)
@@ -1544,7 +1559,8 @@ final class NotchService: ObservableObject {
                       self.captureControls == nil, (self.notice == nil || self.hiddenUntilHover), !self.dragPlaceholder,
                       UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover),
                       self.windowHost?.blocksHoverReveal() == false,
-                      self.geometry.contains(NSEvent.mouseLocation, in: self.hiddenUntilHover ? self.geometry.collapsed : self.surfaceSize) else { return }
+                      self.hiddenUntilHover ? self.reachesHiddenIsland(NSEvent.mouseLocation, holding: true)
+                        : self.geometry.contains(NSEvent.mouseLocation, in: self.surfaceSize) else { return }
                 // Following the closed island ends as it opens or peeks.
                 self.removeHoverExitMonitors()
                 if UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands) {
@@ -2577,7 +2593,8 @@ final class NotchService: ObservableObject {
         let contentTransition = compactMusicTransition(transitionContent, animated: animated)
         if captureControls == nil {
             // A simulated cutout yields to the menu bar when it reappears in full screen.
-            panel?.level = hiddenInFullscreen && !geometry.isNotched && !NotchSupport.coversMenus()
+            // One waiting at the top edge comes out along with it, so it stays above, as on the desktop.
+            panel?.level = hiddenInFullscreen && !geometry.isNotched && !NotchSupport.coversMenus() && !waitsAtFullscreenEdge
                 ? NotchPanel.fullscreenLevel : NotchPanel.normalLevel
         }
         // Preferences can change computed dimensions without publishing a
@@ -2601,9 +2618,7 @@ final class NotchService: ObservableObject {
                             transitionContent: contentTransition,
                             quickAccess: expanded && captureControls == nil && !showingCommandBar && !access.buttons.isEmpty
                                 ? access : nil,
-                            revealFromHidden: !hiddenInFullscreen && captureControls == nil
-                                && UserDefaults.standard.bool(forKey: DefaultsKey.notchHideUntilHover)
-                                && UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover),
+                            revealFromHidden: captureControls == nil && waitsForHover,
                             usesGlass: !fullscreenCompact && usesGlassSurface,
                             steady: fitsInPlace)
         // The selector lives in a separate full-screen panel. A floating
@@ -2658,6 +2673,15 @@ final class NotchService: ObservableObject {
             } else { finishMusicDeparture() }
         }
         syncScreenEdgeClicks()
+    }
+
+    /// Hidden until hover, the island answers a pointer over its closed size.
+    /// In full screen that place is the app's toolbar, so only the top edge
+    /// above it reaches the island there; the pointer may then move down over
+    /// the closed size while the opening waits.
+    private func reachesHiddenIsland(_ point: CGPoint, holding: Bool) -> Bool {
+        hiddenInFullscreen ? geometry.edgeRevealContains(point, holding: holding)
+            : geometry.contains(point, in: geometry.collapsed)
     }
 
     private func syncHiddenHoverMonitoring() {

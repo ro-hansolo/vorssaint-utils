@@ -899,6 +899,7 @@ enum DefaultsKey {
     static let notchShortcut = "notchShortcut"
     static let notchHideInFullscreen = "notchHideInFullscreen"
     static let notchHideUntilHover = "notchHideUntilHover"
+    static let notchFullscreenEdgeReveal = "notchFullscreenEdgeReveal"
     static let notchCoversMenus = "notchCoversMenus"
     static let notchLowBatteryTint = "notchLowBatteryTint"
     static let notchLowBatteryThreshold = "notchLowBatteryThreshold"
@@ -1493,6 +1494,7 @@ enum Defaults {
         DefaultsKey.notchShortcut: GlobalShortcut.notchDefault.storageValue,
         DefaultsKey.notchHideInFullscreen: false,
         DefaultsKey.notchHideUntilHover: false,
+        DefaultsKey.notchFullscreenEdgeReveal: false,
         DefaultsKey.notchCoversMenus: true,
         DefaultsKey.notchLowBatteryTint: false,
         DefaultsKey.notchLowBatteryThreshold: NotchSupport.defaultLowBatteryThreshold,

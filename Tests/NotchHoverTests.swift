@@ -24,11 +24,16 @@ enum NotchHoverTests {
     enum UserDefaults {
         static var standard = Preferences()
         struct Preferences {
-            var enabled = true, expands = true, hides = false
+            var enabled = true, expands = true, hides = false, edge = false
             var delay = NotchSupport.defaultHoverDelay
             var closeDelay = NotchSupport.defaultCloseDelay
             func bool(forKey key: String) -> Bool {
-                key == DefaultsKey.notchHideUntilHover ? hides : key == DefaultsKey.notchOpenOnHover ? enabled : expands
+                switch key {
+                case DefaultsKey.notchHideUntilHover: return hides
+                case DefaultsKey.notchOpenOnHover: return enabled
+                case DefaultsKey.notchFullscreenEdgeReveal: return edge
+                default: return expands
+                }
             }
             func double(forKey key: String) -> Double { delay }
         }
@@ -294,6 +299,37 @@ enum NotchHoverTests {
         suite.expect(simulatedFullscreen.hoverWork == nil && !simulatedFullscreen.peeking
                      && simulatedFullscreen.openings == 0,
                      "a simulated cutout hidden in full screen does not open on hover")
+        // Waiting at the top edge, the hidden cutout answers a pointer pushed
+        // against the edge, never one passing over the app's toolbar below.
+        let edge = fixture()
+        edge.hiddenInFullscreen = true
+        UserDefaults.standard.edge = true
+        edge.windowHost?.visible = false
+        edge.syncHiddenHoverMonitoring()
+        suite.expect(edge.hiddenUntilHover && NSEvent.global.count == 1 && NSEvent.local.count == 1,
+                     "a simulated cutout waiting at the top edge in full screen follows the pointer while hidden")
+        let closed = edge.geometry.frame(for: edge.geometry.collapsed)
+        NSEvent.mouseLocation = CGPoint(x: closed.midX, y: edge.geometry.screen.maxY - NotchGeometry.edgeRevealDepth - 1)
+        edge.hover(true)
+        DispatchQueue.main.advance(1)
+        suite.expect(!edge.inside && edge.hoverWork == nil && edge.openings == 0,
+                     "the app's toolbar below the hidden cutout never brings it out in full screen")
+        NSEvent.mouseLocation = CGPoint(x: closed.midX, y: edge.geometry.screen.maxY)
+        edge.hover(true)
+        NSEvent.mouseLocation = CGPoint(x: closed.midX, y: closed.midY)
+        edge.hover(true)
+        DispatchQueue.main.advance(0.26)
+        suite.expect(edge.openings == 1 && edge.openedByHover,
+                     "the top edge brings it out, and the pointer may move down over its place while the opening waits")
+        edge.windowHost?.visible = true
+        leave(edge)
+        DispatchQueue.main.advance(0.20)
+        suite.expect(edge.closures == 1 && edge.hiddenUntilHover,
+                     "leaving returns the island to wait at the top edge")
+        let notchedEdge = fixture(physical: true)
+        notchedEdge.hiddenInFullscreen = true
+        UserDefaults.standard.edge = true
+        suite.expect(!notchedEdge.hiddenUntilHover, "a physical cutout keeps its black shape in full screen rather than waiting")
         for physical in [false, true] {
             let service = fixture(physical: physical)
             let resting = service.surfaceSize

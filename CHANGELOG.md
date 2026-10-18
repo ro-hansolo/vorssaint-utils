@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- On displays without a notch, Dynamic Island hidden in full screen can wait at the top edge of the screen and come out when the pointer reaches it, like the menu bar, without covering the app's toolbar. Settings → Dynamic Island → Behavior → Display → Show at the top edge.
+
 ## [3.4.2-beta.1] - 2026-10-18
 
 ### Summary

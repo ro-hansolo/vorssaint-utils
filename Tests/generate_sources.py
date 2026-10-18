@@ -982,7 +982,8 @@ def main():
           + declaration(notch, "    func show(_ incoming:").replace("NotchSupport.routes(incoming.event)", "true")
             .replace("    func", "    @discardableResult\n    func", 1)
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
-              "    private var hiddenUntilHover:", "    private var hiddenAtRestInFullscreen:", "    func hover(",
+              "    private var hiddenUntilHover:", "    private var waitsForHover:", "    private var waitsAtFullscreenEdge:",
+              "    private var hiddenAtRestInFullscreen:", "    func hover(", "    private func reachesHiddenIsland(",
               "    private func syncHoverExitMonitoring(", "    private func removeHoverExitMonitors(",
               "    var showsCompactActivityPicker:",
               "    private func missionControlDidRestore()",
@@ -1005,7 +1006,8 @@ def main():
               .replace("    func toggleMusicStripSong", "    @discardableResult\n    func toggleMusicStripSong", 1)
           + "}\n}\n")
     music_visibility = "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
-        "    private var hiddenUntilHover:", "    var fullscreenCompact:", "    var idleContent:", "    var hasMusicActivity:",
+        "    private var hiddenUntilHover:", "    private var waitsForHover:", "    private var waitsAtFullscreenEdge:",
+        "    var fullscreenCompact:", "    var idleContent:", "    var hasMusicActivity:",
         "    private func musicStripHolds(", "    var compactActivity:",
         "    var compactActivityGeometry:", "    private func compactGeometry(", "    var compactActivities:",
         "    var compactCompanion:",
@@ -1102,6 +1104,8 @@ def main():
               .replace(".receive(on: DispatchQueue.main)", "")
               .replace("panel?.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)", "panel?.level = 2")
           + declaration(notch, "    private var hiddenUntilHover:").replace("private var", "var", 1)
+          + declaration(notch, "    private var waitsForHover:").replace("private var", "var", 1)
+          + declaration(notch, "    private var waitsAtFullscreenEdge:").replace("private var", "var", 1)
           + declaration(notch, "    private var hiddenAtRestInFullscreen:").replace("private var", "var", 1)
           + declaration(notch, "    var acceptsUserInteraction:")
           + declaration(notch, "    var acceptsSystemFeedback:")

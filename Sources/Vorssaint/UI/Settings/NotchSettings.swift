@@ -43,6 +43,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchShortcutEnabled) private var shortcutEnabled = false
     @AppStorage(DefaultsKey.notchHideInFullscreen) private var hideInFullscreen = false
     @AppStorage(DefaultsKey.notchHideUntilHover) private var hideUntilHover = false
+    @AppStorage(DefaultsKey.notchFullscreenEdgeReveal) private var fullscreenEdgeReveal = false
     @AppStorage(DefaultsKey.notchCoversMenus) private var coversMenus = true
     @AppStorage(DefaultsKey.notchHoverDelay) private var hoverDelay = NotchSupport.defaultHoverDelay
     @AppStorage(DefaultsKey.notchCloseDelay) private var closeDelay = NotchSupport.defaultCloseDelay
@@ -121,7 +122,7 @@ struct NotchSettings: View {
          String(customWidth), String(customHeight), String(cameraFitWidth), String(cameraFitHeight),
          String(capsuleFitWidth), String(capsuleFitHeight), String(capsuleFitDrop), String(hapticFeedback),
          String(shelfWindow), String(dragReveal), String(captureControls), String(quickPanel), String(appPanel),
-         String(hoverExpand), String(hideUntilHover), String(hideInFullscreen), String(coversMenus),
+         String(hoverExpand), String(hideUntilHover), String(hideInFullscreen), String(fullscreenEdgeReveal), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
          String(microphone), String(battery), String(clipboard), String(clipboardWindow), clipboardCardSize,
@@ -683,6 +684,12 @@ struct NotchSettings: View {
             }
             SettingsCard(title: text.display) {
                 switchRow("arrow.up.left.and.arrow.down.right", text.hideInFullscreen, isOn: $hideInFullscreen)
+                // Only a simulated cutout hides completely in full screen, and only hover can bring it out.
+                if hideInFullscreen, hover, !notch.geometry.isNotched {
+                    switchRow("arrow.up.to.line", text.fullscreenEdgeReveal, caption: text.fullscreenEdgeRevealHint,
+                              isOn: $fullscreenEdgeReveal)
+                        .padding(.leading, settingsRowTextInset)
+                }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     // A mode this version no longer offers is treated as automatic, as the island does.
                     choice(text.automatic, symbol: "display.2",

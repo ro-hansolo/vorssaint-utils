@@ -39,11 +39,13 @@ enum NotchPresentationRefreshContract {
         static var standard = Preferences()
         struct Preferences {
             var hides = false
+            var edge = false
             var outline = false
             var coversMenus = true
             func bool(forKey key: String) -> Bool {
                 switch key {
                 case DefaultsKey.notchHideUntilHover: return hides
+                case DefaultsKey.notchFullscreenEdgeReveal: return edge
                 case DefaultsKey.notchOutlineEnabled: return outline
                 default: return true
                 }
@@ -556,6 +558,20 @@ enum NotchPresentationRefreshContract {
         fullscreenSimulated.refreshPresentation(animated: false)
         suite.expect(fullscreenSimulated.panel?.level == NotchPanel.normalLevel,
                      "the explicit cover-menus preference keeps the usual panel level")
+        UserDefaults.standard.coversMenus = false
+        UserDefaults.standard.edge = true
+        fullscreenSimulated.collapse()
+        fullscreenSimulated.refreshPresentation(animated: false)
+        suite.expect(fullscreenSimulated.panel?.isVisible == false && fullscreenSimulated.hiddenUntilHover
+                     && !fullscreenSimulated.edgeClicksEnabled,
+                     "a simulated cutout waiting at the top edge stays out of full-screen content")
+        fullscreenSimulated.expanded = true
+        fullscreenSimulated.refreshPresentation(animated: false)
+        suite.expect(fullscreenSimulated.panel?.isVisible == true && fullscreenSimulated.windowHost?.revealFromHidden == true
+                     && fullscreenSimulated.panel?.level == NotchPanel.normalLevel,
+                     "the top edge reveals the island from hiding, above the menu bar it brings out with it")
+        UserDefaults.standard.edge = false
+        UserDefaults.standard.coversMenus = true
         let missionControl = Service()
         missionControl.windowHost?.concealedForMissionControl = true
         suite.expect(!missionControl.acceptsSystemFeedback && !missionControl.acceptsUserInteraction
