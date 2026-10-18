@@ -1,3 +1,10 @@
+> [!NOTE]
+> **This is [@ro-hansolo](https://github.com/ro-hansolo)'s fork of [vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils).** It adds one option to Dynamic Island: **Show at the top edge**.
+>
+> On a display without a notch, with *Hide content in full screen* turned on, upstream Vorssaint keeps the island away in full screen until its keyboard shortcut opens it. With this option the island stays hidden in full-screen apps and comes out when the pointer is pushed against the top edge of the screen, like the menu bar. Only that thin strip at the edge reaches it, so it never sits over an app's toolbar and never opens while the pointer rests on it, such as Safari's address field. On the desktop the island opens on hover as usual.
+>
+> Settings → Dynamic Island → Behavior → Display → Hide content in full screen → Show at the top edge. Build and install with `./build.sh --install`. Everything else is upstream Vorssaint.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/logo-dark.svg">
